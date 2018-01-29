@@ -50,6 +50,7 @@ python
 7. `sudo pip install scikit-learn`
 8. `sudo pip install matplotlib`
 9. `sudo apt-get install python3-tk`
+10. `sudo pip install requests`
 
 Then you can do:
 ```

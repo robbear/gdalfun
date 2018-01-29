@@ -1,9 +1,10 @@
 import os
+import sys
+import random
 import numpy
 import numpy as np
 import numpy as N
 from numpy import genfromtxt
-import random
 import requests
 import json
 import time
@@ -12,23 +13,51 @@ import time
 
 your_directory = os.getcwd()+"/"
 
+def usage():
+  print('gdalfun.py usage:')
+  print('  gdalfun.py inputPath outputPath')
 
-def import_image():
-  image_variable = str(random.randint(1, 10000))
 
-  image_name = raw_input("Which scene would you like to analyze? Note that it must be in this root directory.")
+def main():
+  if len(sys.argv) != 3:
+    usage()
+    return
+  else:
+    import_image(sys.argv[1], sys.argv[2])
+    
 
-  mask_name = raw_input("Which file would you like to use to mask your scene? Note that it must be in this root directory.")
+def import_image(inputPath, outputPath):
+  
+  #
+  # BUGBUG - ignore using shape mask for now
+  #
 
   # Clip the image with gdalwarp
-  # You must hahe gdal installed for this script to work
-  os.system("gdalwarp -q -cutline "+your_directory+mask_name+" -crop_to_cutline -dstalpha -tr 0.1 0.1 -of GTiff "+your_directory+image_name+" "+your_directory+image_variable+".tif")
+  # You must have gdal installed for this script to work
+  # os.system("gdalwarp -q -cutline "+your_directory+mask_name+" -crop_to_cutline -dstalpha -tr 0.1 0.1 -of GTiff "+your_directory+image_name+" "+your_directory+image_variable+".tif")
+  
+  #
+  # -dstalpha: Create an output alpha band to identify nodata (unset/transparent) pixels
+  # -tr: Set output file resolution (in target georeferenced units)
+  # -of: Output format is GeoTiff
+  # -overwrite: Overwrite any existing output file
+  #
+  
+  # Get output path without extension
+  outputPathBase = os.path.splitext(outputPath)[0]
+  outputPathXYZ = outputPathBase + '.xyz'
 
-  # Turn the tiff into a text file
-  os.system("gdal_translate -of XYZ "+your_directory+image_variable+".tif "+your_directory+image_variable+".xyz")
-  print "gdal_translate -of XYZ "+your_directory+image_variable+".tif "+your_directory+image_variable+".xyz"
+  os.system('gdalwarp -overwrite -dstalpha -tr 0.1 0.1 -of GTiff ' + inputPath + ' ' + outputPath)
+  
+  # BUGBUG - the following works, but need a smaller dataset. Stub out
+  # until we have clipping working
+  return
 
-  data = genfromtxt(image_variable+".xyz", delimiter=' ')
+  # Turn the tiff into an XYZ ungridded text file
+  os.system('gdal_translate -of XYZ ' + outputPath + ' ' + outputPathXYZ)
+
+  data = genfromtxt(outputPathXYZ, delimiter=' ')
+  print(data.describe())
 
   return data
 
@@ -70,7 +99,7 @@ def sort_by_intensity(data):
   mapbox_array = zip(*mapbox_array)
   header = ["title","lat","lon","intensity"]
   mapbox_array_header = numpy.vstack([header, mapbox_array])
-  print mapbox_array_header
+  print(mapbox_array_header)
   numpy.savetxt("mapbox.csv", mapbox_array_header, delimiter=",", fmt="%s")
     
 
@@ -89,4 +118,5 @@ def google_custom_search(data):
     print("No one knows what's going on in "+data)
 
 
-sort_by_intensity(import_image())
+#sort_by_intensity(import_image())
+main()
